@@ -1,9 +1,13 @@
+# Author: x31xc0
+# Date: 03/03/2016
+# Name: Redis AUTH check
 import sys
 import time
 import telnetlib
 import socket
 import signal
 
+# Set terminal colors
 class colors:
     SUCCESS = '\033[92m'
     ERROR = '\033[91m'
@@ -33,7 +37,6 @@ def main():
 
     print response
     pass
-
 
 
 if __name__ == '__main__':
