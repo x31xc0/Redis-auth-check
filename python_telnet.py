@@ -6,6 +6,7 @@ import time
 import telnetlib
 import socket
 import signal
+from subprocess import call, check_output
 
 # Set terminal colors
 class colors:
@@ -30,34 +31,38 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def main():
     #Test connection
-    CheckHostTelnetConnnection()
-
-    telnet.telnetCon.write("config get dir\r\n")
-    time.sleep(2) #Temp solution?
-    response = (telnet.telnetCon.read_eager().decode('ascii'))
-    print response
+    if(CheckHostTelnetConnnection()):
+        GenerateRsaKey()
     pass
 
 def CheckHostTelnetConnnection():
     try:
         telnet.telnetCon = telnetlib.Telnet(host, redisPort, timeout = timeout)
     except socket.error:
-        print colors.ERROR + "[-]Error connecting to "+host+" on port " + str(redisPort) + colors.DEFAULT
+        print colors.ERROR + "[-] Error connecting to "+host+" on port " + str(redisPort) + colors.DEFAULT
         exit(1)
-    print colors.SUCCESS + "\n[+]Sucessfully connected to "+host+" on port " + str(redisPort) + colors.DEFAULT
-    print colors.INFO + "\nTesting for AUTH\n" + colors.DEFAULT,
+    print colors.SUCCESS + "\n[+] Sucessfully connected to "+host+" on port " + str(redisPort) + colors.DEFAULT
+    print colors.INFO + "\nTesting for AUTH\n" + colors.DEFAULT
 
     telnet.telnetCon.write("echo noauth\r\n")
     time.sleep(1) #Temp solution?
     response = (telnet.telnetCon.read_eager().decode('ascii'))
 
     if "noauth" in response:
-        print colors.SUCCESS + "[+]No AUTH set" + colors.DEFAULT
-        return 0
+        print colors.SUCCESS + "[+] No AUTH set" + colors.DEFAULT
+        return 1 # Success
     else:
         #TODO: Add more refined checking for if(AUTH)
-        print + color.ERROR + "[-]AUTH set" + colors.DEFAULT
+        print + color.ERROR + "[-] AUTH set" + colors.DEFAULT
+
     pass
+
+def GenerateRsaKey():
+    #TODO: Add options for custom passphrase, note and save location
+    user = check_output(["whoami"]).strip()
+    print colors.INFO + "\nGenerating RSA key\n" + colors.DEFAULT
+    if(call(["ssh-keygen", "-q" ,"-t", "rsa","-f", "/"+user+"/.ssh/id_rsa", "-C", "'redis'" ,"-N", "x31xc0"]) == 0):
+        print colors.SUCCESS + "\n[+] Successfully generated RSA key" + colors.DEFAULT
 
 
 if __name__ == '__main__':
