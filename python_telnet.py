@@ -8,21 +8,22 @@ import socket
 import signal
 from subprocess import call, check_output
 
-# Set terminal colors
-class colors:
-    SUCCESS = '\033[92m'
-    ERROR = '\033[91m'
-    INFO = '\033[93m'
-    DEFAULT = '\033[0m'
-
-# TODO: Fill out generic connection class
-class telnet:
-    telnetCon = ''
-
 #Define host: TODO: Read from file
 host = "127.0.0.1"
 redisPort = 6379
 timeout = 60 #This may need to be adjusted
+
+# Set terminal colors
+class TerminalColors:
+    SUCCESS = '\033[92m'
+    ERROR = '\033[91m'
+    INFO = '\033[93m'
+    DEFAULT = '\033[0m'
+colors = TerminalColors()
+
+# TODO: Fill out generic connection class
+class telnet:
+    telnetCon = ''
 
 def signal_handler(signal, frame):
         print "[-] SIGINT captured. Closing"
@@ -31,7 +32,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def main():
     #Test connection
-    if(CheckHostTelnetConnnection()):
+    if(CheckHostTelnetConnnection() == 0):
         GenerateRsaKey()
     pass
 
@@ -41,28 +42,33 @@ def CheckHostTelnetConnnection():
     except socket.error:
         print colors.ERROR + "[-] Error connecting to "+host+" on port " + str(redisPort) + colors.DEFAULT
         exit(1)
-    print colors.SUCCESS + "\n[+] Sucessfully connected to "+host+" on port " + str(redisPort) + colors.DEFAULT
-    print colors.INFO + "\nTesting for AUTH\n" + colors.DEFAULT
+    CustomPrint("SUCCESS", "\n[+] Sucessfully connected to "+host+" on port " + str(redisPort))
+    CustomPrint("INFO", "\nTesting for AUTH\n")
 
     telnet.telnetCon.write("echo noauth\r\n")
     time.sleep(1) #Temp solution?
     response = (telnet.telnetCon.read_eager().decode('ascii'))
 
     if "noauth" in response:
-        print colors.SUCCESS + "[+] No AUTH set" + colors.DEFAULT
-        return 1 # Success
+        CustomPrint("SUCCESS", "[+] No AUTH set")
+        return 0 # Success
     else:
         #TODO: Add more refined checking for if(AUTH)
-        print + color.ERROR + "[-] AUTH set" + colors.DEFAULT
-
+        CustomPrint("ERROR", "[-] AUTH set")
+        return 1 # Failure
     pass
 
 def GenerateRsaKey():
     #TODO: Add options for custom passphrase, note and save location
     user = check_output(["whoami"]).strip()
-    print colors.INFO + "\nGenerating RSA key\n" + colors.DEFAULT
+    CustomPrint("INFO", "\nGenerating RSA key\n")
     if(call(["ssh-keygen", "-q" ,"-t", "rsa","-f", "/"+user+"/.ssh/id_rsa", "-C", "'redis'" ,"-N", "x31xc0"]) == 0):
-        print colors.SUCCESS + "\n[+] Successfully generated RSA key" + colors.DEFAULT
+        CustomPrint("SUCCESS", "\n[+] Successfully generated RSA key")
+        return 0
+    return 1
+
+def CustomPrint(printType, message):
+    print getattr(colors, printType) + message + colors.DEFAULT
 
 
 if __name__ == '__main__':
